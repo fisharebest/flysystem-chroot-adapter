@@ -1,7 +1,7 @@
 <?php
 /**
- * @author    Greg Roach <fisharebest@gmail.com>
- * @copyright Copyright (c) 2019
+ * @author    Greg Roach <greg@subaqua.co.uk>
+ * @copyright Copyright (c) 2020
  * @licence   MIT
  */
 
