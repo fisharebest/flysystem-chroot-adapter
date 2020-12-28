@@ -7,20 +7,26 @@
 
 namespace Fisharebest\Flysystem\Adapter;
 
-use League\Flysystem\AdapterInterface;
 use League\Flysystem\Config;
-use League\Flysystem\FilesystemInterface;
+use League\Flysystem\DirectoryAttributes;
+use League\Flysystem\FileAttributes;
+use League\Flysystem\FilesystemAdapter;
+use League\Flysystem\FilesystemException;
+use League\Flysystem\FilesystemOperator;
+use League\Flysystem\StorageAttributes;
+use ReflectionException;
+use ReflectionProperty;
+
+use function strlen;
+use function substr;
 
 /**
  * Create a subtree from an existing filesystem.
  */
-class ChrootAdapter implements AdapterInterface
+class ChrootAdapter implements FilesystemAdapter
 {
-    /** @var string[] Metadata attributes that may need prefixes removing */
-    private static $ATTRIBUTES_WITH_PREFIX = ['dirname', 'path'];
-
-    /** @var AdapterInterface */
-    private $adapter;
+    /** @var FilesystemAdapter */
+    public $adapter;
 
     /** @var string */
     private $prefix;
@@ -28,276 +34,211 @@ class ChrootAdapter implements AdapterInterface
     /**
      * ChrootAdapter constructor.
      *
-     * @param FilesystemInterface $filesystem
-     * @param string              $prefix e.g. 'some/prefix'
+     * @param FilesystemOperator $filesystem
+     * @param string             $prefix e.g. 'some/prefix'
+     *
+     * @throws ReflectionException
      */
-    public function __construct(FilesystemInterface $filesystem, $prefix = '')
+    public function __construct(FilesystemOperator $filesystem, string $prefix = '')
     {
-        $this->adapter = $filesystem->getAdapter();
-        $this->prefix  = trim($prefix, '/') . '/';
+        // Since Flysystem 2.0, the adapter is private.  Use reflection to get it.
+        $property = new ReflectionProperty($filesystem, 'adapter');
+        $property->setAccessible(true);
+        $this->adapter = $property->getValue($filesystem);
+
+        $this->prefix = trim($prefix, '/') . '/';
     }
 
     /**
-     * Check whether a file exists.
-     *
      * @param string $path
      *
-     * @return array|bool|null
+     * @return bool
+     * @throws FilesystemException
      */
-    public function has($path)
+    public function fileExists(string $path): bool
     {
-        return $this->adapter->has($this->prefix . $path);
+        return $this->adapter->fileExists($this->prefix . $path);
     }
 
     /**
-     * Read a file.
+     * @param string $path
+     * @param string $contents
+     * @param Config $config
      *
+     * @throws FilesystemException
+     */
+    public function write(string $path, string $contents, Config $config): void
+    {
+        $this->adapter->write($this->prefix . $path, $contents, $config);
+    }
+
+    /**
+     * @param string   $path
+     * @param resource $contents
+     * @param Config   $config
+     *
+     * @throws FilesystemException
+     */
+    public function writeStream(string $path, $contents, Config $config): void
+    {
+        $this->adapter->writeStream($this->prefix . $path, $contents, $config);
+    }
+
+    /**
      * @param string $path
      *
-     * @return array|false
+     * @return string
+     * @throws FilesystemException
      */
-    public function read($path)
+    public function read(string $path): string
     {
         return $this->adapter->read($this->prefix . $path);
     }
 
     /**
-     * Read a file as a stream.
-     *
      * @param string $path
      *
-     * @return array|false
+     * @return resource
+     * @throws FilesystemException
      */
-    public function readStream($path)
+    public function readStream(string $path)
     {
         return $this->adapter->readStream($this->prefix . $path);
     }
 
     /**
-     * List contents of a directory.
-     *
-     * @param string $directory
-     * @param bool   $recursive
-     *
-     * @return array
-     */
-    public function listContents($directory = '', $recursive = false)
-    {
-        $directory = trim($this->prefix . $directory, '/');
-        $contents  = $this->adapter->listContents($directory, $recursive);
-
-        return array_map([$this, 'removePrefixFromMetadata'], $contents);
-    }
-
-    /**
-     * Get all the meta data of a file or directory.
-     *
      * @param string $path
      *
-     * @return array|false
+     * @throws FilesystemException
      */
-    public function getMetadata($path)
+    public function delete(string $path): void
     {
-        $metadata = $this->adapter->getMetadata($this->prefix . $path);
-
-        return $this->removePrefixFromMetadata($metadata);
+        $this->adapter->delete($this->prefix . $path);
     }
 
     /**
-     * Get the size of a file.
-     *
      * @param string $path
      *
-     * @return array|false
+     * @throws FilesystemException
      */
-    public function getSize($path)
+    public function deleteDirectory(string $path): void
     {
-        return $this->adapter->getSize($this->prefix . $path);
+        $this->adapter->deleteDirectory($this->prefix . $path);
     }
 
     /**
-     * Get the mimetype of a file.
-     *
      * @param string $path
-     *
-     * @return array|false
-     */
-    public function getMimetype($path)
-    {
-        return $this->adapter->getMimetype($this->prefix . $path);
-    }
-
-    /**
-     * Get the last modified time of a file as a timestamp.
-     *
-     * @param string $path
-     *
-     * @return array|false
-     */
-    public function getTimestamp($path)
-    {
-        return $this->adapter->getTimestamp($this->prefix . $path);
-    }
-
-    /**
-     * Get the visibility of a file.
-     *
-     * @param string $path
-     *
-     * @return array|false
-     */
-    public function getVisibility($path)
-    {
-        return $this->adapter->getVisibility($this->prefix . $path);
-    }
-
-    /**
-     * Write a new file.
-     *
-     * @param string $path
-     * @param string $contents
-     * @param Config $config Config object
-     *
-     * @return array|false false on failure file meta data on success
-     */
-    public function write($path, $contents, Config $config)
-    {
-        return $this->adapter->write($this->prefix . $path, $contents, $config);
-    }
-
-    /**
-     * Write a new file using a stream.
-     *
-     * @param string   $path
-     * @param resource $resource
-     * @param Config   $config Config object
-     *
-     * @return array|false false on failure file meta data on success
-     */
-    public function writeStream($path, $resource, Config $config)
-    {
-        return $this->adapter->writeStream($this->prefix . $path, $resource, $config);
-    }
-
-    /**
-     * Update a file.
-     *
-     * @param string $path
-     * @param string $contents
-     * @param Config $config Config object
-     *
-     * @return array|false false on failure file meta data on success
-     */
-    public function update($path, $contents, Config $config)
-    {
-        return $this->adapter->update($this->prefix . $path, $contents, $config);
-    }
-
-    /**
-     * Update a file using a stream.
-     *
-     * @param string   $path
-     * @param resource $resource
-     * @param Config   $config Config object
-     *
-     * @return array|false false on failure file meta data on success
-     */
-    public function updateStream($path, $resource, Config $config)
-    {
-        return $this->adapter->updateStream($this->prefix . $path, $resource, $config);
-    }
-
-    /**
-     * Rename a file.
-     *
-     * @param string $path
-     * @param string $newpath
-     *
-     * @return bool
-     */
-    public function rename($path, $newpath)
-    {
-        return $this->adapter->rename($this->prefix . $path, $this->prefix . $newpath);
-    }
-
-    /**
-     * Copy a file.
-     *
-     * @param string $path
-     * @param string $newpath
-     *
-     * @return bool
-     */
-    public function copy($path, $newpath)
-    {
-        return $this->adapter->copy($this->prefix . $path, $this->prefix . $newpath);
-    }
-
-    /**
-     * Delete a file.
-     *
-     * @param string $path
-     *
-     * @return bool
-     */
-    public function delete($path)
-    {
-        return $this->adapter->delete($this->prefix . $path);
-    }
-
-    /**
-     * Delete a directory.
-     *
-     * @param string $dirname
-     *
-     * @return bool
-     */
-    public function deleteDir($dirname)
-    {
-        return $this->adapter->deleteDir($this->prefix . $dirname);
-    }
-
-    /**
-     * Create a directory.
-     *
-     * @param string $dirname directory name
      * @param Config $config
      *
-     * @return array|false
+     * @throws FilesystemException
      */
-    public function createDir($dirname, Config $config)
+    public function createDirectory(string $path, Config $config): void
     {
-        return $this->adapter->createDir($this->prefix . $dirname, $config);
+        $this->adapter->createDirectory($this->prefix . $path, $config);
     }
 
     /**
-     * Set the visibility for a file.
+     * @param string $path
+     * @param bool   $deep
      *
+     * @return iterable
+     * @throws FilesystemException
+     */
+    public function listContents(string $path, bool $deep): iterable
+    {
+        $storage_attributes = $this->adapter->listContents($this->prefix . $path, $deep);
+
+        foreach ($storage_attributes as $storage_attribute) {
+            $attributes = $storage_attribute->jsonSerialize();
+
+            $attributes[StorageAttributes::ATTRIBUTE_PATH] = substr($attributes[StorageAttributes::ATTRIBUTE_PATH], strlen($this->prefix));
+
+            if ($storage_attribute instanceof DirectoryAttributes) {
+                yield DirectoryAttributes::fromArray($attributes);
+            }
+
+            if ($storage_attribute instanceof FileAttributes) {
+                yield FileAttributes::fromArray($attributes);
+            }
+        }
+    }
+
+    /**
+     * @param string $source
+     * @param string $destination
+     * @param Config $config
+     *
+     * @throws FilesystemException
+     */
+    public function move(string $source, string $destination, Config $config): void
+    {
+        $this->adapter->move($this->prefix . $source, $this->prefix . $destination, $config);
+    }
+
+    /**
+     * @param string $source
+     * @param string $destination
+     * @param Config $config
+     *
+     * @throws FilesystemException
+     */
+    public function copy(string $source, string $destination, Config $config): void
+    {
+        $this->adapter->copy($this->prefix . $source, $this->prefix . $destination, $config);
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return FileAttributes
+     * @throws FilesystemException
+     */
+    public function lastModified(string $path): FileAttributes
+    {
+        return $this->adapter->lastModified($this->prefix . $path);
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return FileAttributes
+     * @throws FilesystemException
+     */
+    public function fileSize(string $path): FileAttributes
+    {
+        return $this->adapter->fileSize($this->prefix . $path);
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return FileAttributes
+     * @throws FilesystemException
+     */
+    public function mimeType(string $path): FileAttributes
+    {
+        return $this->adapter->mimeType($this->prefix . $path);
+    }
+
+    /**
      * @param string $path
      * @param string $visibility
      *
-     * @return array|false file meta data
+     * @throws FilesystemException
      */
-    public function setVisibility($path, $visibility)
+    public function setVisibility(string $path, string $visibility): void
     {
-        return $this->adapter->setVisibility($this->prefix . $path, $visibility);
+        $this->adapter->setVisibility($this->prefix . $path, $visibility);
     }
 
     /**
-     * Strip the prefix from metadata attributes.
+     * @param string $path
      *
-     * @param array $metadata
-     *
-     * @return array
+     * @return FileAttributes
+     * @throws FilesystemException
      */
-    private function removePrefixFromMetadata(array $metadata)
+    public function visibility(string $path): FileAttributes
     {
-        foreach (self::$ATTRIBUTES_WITH_PREFIX as $attribute) {
-            if (isset($metadata[$attribute])) {
-                $metadata[$attribute] = substr($metadata[$attribute], strlen($this->prefix));
-            }
-        }
-
-        return $metadata;
+        return $this->adapter->visibility($this->prefix . $path);
     }
 }
