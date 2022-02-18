@@ -17,11 +17,11 @@
         }
     ],
     "require": {
-        "league/flysystem": "~2.0"
+        "league/flysystem": "~3.0"
     },
     "require-dev": {
-        "league/flysystem-memory": "^2.0",
-        "league/flysystem-adapter-test-utilities": "~2.0",
+        "league/flysystem-memory": "~3.0",
+        "league/flysystem-adapter-test-utilities": "~3.0",
         "phpunit/phpunit": "~9.5",
         "php-coveralls/php-coveralls": "~2.4"
     },

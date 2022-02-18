@@ -66,6 +66,18 @@ class ChrootAdapter implements FilesystemAdapter
      * @throws FilesystemException
      * @throws UnableToCheckExistence
      */
+    public function directoryExists(string $path): bool
+    {
+        return $this->adapter->directoryExists($this->prefix . $path);
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return bool
+     * @throws FilesystemException
+     * @throws UnableToCheckExistence
+     */
     public function fileExists(string $path): bool
     {
         return $this->adapter->fileExists($this->prefix . $path);
