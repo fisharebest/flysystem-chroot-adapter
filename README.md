@@ -2,10 +2,10 @@
 
 [![Author](http://img.shields.io/badge/author-@fisharebest-blue.svg?style=flat-square)](https://github.com/fisharebest)
 [![Latest Stable Version](https://poser.pugx.org/fisharebest/flysystem-chroot-adapter/v/stable.svg)](https://packagist.org/packages/fisharebest/flysystem-chroot-adapter)
-[![Build Status](https://travis-ci.org/fisharebest/flysystem-chroot-adapter.svg?branch=master)](https://travis-ci.org/fisharebest/flysystem-chroot-adapter)
-[![Coverage Status](https://coveralls.io/repos/github/fisharebest/flysystem-chroot-adapter/badge.svg?branch=master)](https://coveralls.io/github/fisharebest/flysystem-chroot-adapter?branch=master)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/fisharebest/flysystem-chroot-adapter/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/fisharebest/flysystem-chroot-adapter/?branch=master)
-[![StyleCI](https://github.styleci.io/repos/166235152/shield?branch=master)](https://github.styleci.io/repos/166235152)
+[![Build Status](https://travis-ci.org/fisharebest/flysystem-chroot-adapter.svg?branch=main)](https://travis-ci.org/fisharebest/flysystem-chroot-adapter)
+[![Coverage Status](https://coveralls.io/repos/github/fisharebest/flysystem-chroot-adapter/badge.svg?branch=main)](https://coveralls.io/github/fisharebest/flysystem-chroot-adapter?branch=main)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/fisharebest/flysystem-chroot-adapter/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/fisharebest/flysystem-chroot-adapter/?branch=main)
+[![StyleCI](https://github.styleci.io/repos/166235152/shield?branch=main)](https://github.styleci.io/repos/166235152)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)
 
 This adapter creates a new filesystem from a sub-folder of an existing filesystem.
