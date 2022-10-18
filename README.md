@@ -10,6 +10,17 @@
 
 This adapter creates a new filesystem from a sub-folder of an existing filesystem.
 
+----------
+
+*IMPORTANT: Since flysystem 3.3, this functionality is now available from [flysystem directly](https://flysystem.thephpleague.com/docs/adapter/path-prefixing/).*
+You should migrate to that package.
+
+In composer.json, replace `fisharebest/flysystem-chroot-adapter` with `league/flysystem-path-prefixing`.
+
+In your code, replace `Fisharebest\Flysystem\Adapter\ChrootAdapter` with `League\Flysystem\PathPrefixing`.
+
+----------
+
 ## Installation
 
 ```bash
